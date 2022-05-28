@@ -30,8 +30,8 @@ class User {
             $sql = "SELECT * FROM $tableName WHERE password = '$this->pass'";
             $data = $conn->query($sql);
             if($data->num_rows == 0) {
-                echo "Wrong password";
-            } else { echo "OK"; }
+                echo ("Wrong password");
+            } else { echo ("OK" . $this->login); }
         }
         $conn->close();
     }
@@ -44,7 +44,7 @@ class User {
         if ($data->num_rows == 0) {
             $sql = "INSERT INTO $tableName (nickname, password) VALUES ('$this->login', '$this->pass');";
             $data = $conn->query($sql);
-            if ($data === TRUE) { echo "Registered succesfully";
+            if ($data === TRUE) { echo ("OK" . $this->login);;
             } else { echo "Error: $sql $conn->error";};
         } else {echo "This nickname is reserved";}
         $conn->close();

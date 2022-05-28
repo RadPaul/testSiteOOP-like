@@ -20,12 +20,10 @@ function oldUser() {
     hr.open("POST", "php/authentification.php", true);
     hr.setRequestHeader("Content-type", "application/x-www-form-urlencoded");
     hr.onreadystatechange = function() {
-        console.log(hr);
         if (hr.readyState == 4 && hr.status == 200) {
             var return_data = hr.responseText;
-            console.log(return_data);
-            if (return_data == "OK") {
-                localStorage.setItem("myid", login);
+            if (return_data.slice(0,2) == "OK") {
+                Crumbs.setCookie("myid", return_data.slice(2));
                 pageView();
             } else {alert(return_data); }
         }
@@ -51,8 +49,8 @@ function newUser() {
             if (hr.readyState == 4 && hr.status == 200) {
                 var return_data = hr.responseText;
                 console.log(return_data);
-                if (return_data == "Registered succesfully") {
-                    localStorage.setItem("myid", login);
+                if (return_data.slice(0,2) == "OK") {
+                    Crumbs.setCookie("myid", return_data.slice(2));
                     pageView();
                 } else {alert(return_data); }
             }
@@ -63,17 +61,8 @@ function newUser() {
 
 //site personalization
 function pageView() {
-    if (localStorage.getItem("myid")) {
-        document.getElementById("profile").innerHTML=localStorage.getItem("myid");
-        document.getElementById("profile").setAttribute("onclick", "myStat()");
-        document.getElementById("auth").style.display="none";
-    }
-    //user stylesheet mode
-    if (localStorage.getItem("mode") === null) {
-        localStorage.setItem("mode", document.getElementById("stylesheet").getAttribute("href"));
-    } else {
-        document.getElementById("stylesheet").setAttribute("href", localStorage.getItem("mode"));
-    }
+    Crumbs.checkCookie("myid");
+    Crumbs.checkCookie("mode");
 }
 
 //shows/hides authentification form
@@ -85,28 +74,25 @@ function logForm() {
     } 
 }
 
-//change the styleshhet mode function
+//changes visual mode
 function changeMode() {
     const sslink = document.getElementById("stylesheet");
     if (sslink.getAttribute("href") == "stylesheets/styleLight.css") {
-        localStorage.setItem("mode","stylesheets/styleDark.css");
+        Crumbs.setCookie("mode","stylesheets/styleDark.css");
     } else {
-        localStorage.setItem("mode","stylesheets/styleLight.css");
+        Crumbs.setCookie("mode","stylesheets/styleLight.css");
     }
-    return sslink.setAttribute("href", localStorage.getItem("mode"));
+    return sslink.setAttribute("href", Crumbs.getCookie("mode"));
 }
 
-//function that shows a random number (which is basically the only point of the site being a thing)
+//shows a random number (which is basically the only point of the site being a thing)
 function likeAGame() {
-    // Create our XMLHttpRequest object
     var hr = new XMLHttpRequest();
-    // Create some variables we need to send to our PHP file
     var number = Math.round(Math.random()*10000);
-    var name = localStorage.getItem("myid");
+    var name = Crumbs.getCookie("myid");
     var vars = "number="+number+"&name="+name;
     hr.open("POST", "php/statistics.php", true);
     hr.setRequestHeader("Content-type", "application/x-www-form-urlencoded");
-    // Access the onreadystatechange event for the XMLHttpRequest object
     hr.onreadystatechange = function() {
         if(hr.readyState == 4 && hr.status == 200) {
             var return_data = hr.responseText;
@@ -122,12 +108,11 @@ function myStat(value){
     if (value=='all') {
         var name = null;
     } else {
-        var name = localStorage.getItem("myid");
+        var name = Crumbs.getCookie("myid");
     }
     var vars = "name="+name;
     hr.open("POST", "php/statistics.php", true);
     hr.setRequestHeader("Content-type", "application/x-www-form-urlencoded");
-    // Access the onreadystatechange event for the XMLHttpRequest object
     hr.onreadystatechange = function() {
         if(hr.readyState == 4 && hr.status == 200) {
             var return_data = hr.responseText;
@@ -141,4 +126,51 @@ function play() {
     console.log("played well");
     document.getElementById("content").innerHTML='<p onclick="likeAGame();">Try</p><p id="status"> </p>';
 
+}
+
+//cookies usage
+class Crumbs {
+    static getCookie(cname) {
+        let name = cname + "=";
+        let decodedCookie = decodeURIComponent(document.cookie);
+        let ca = decodedCookie.split(';');
+        for(let i = 0; i < ca.length; i++) {
+            let c = ca[i];
+            while (c.charAt(0) == ' ') {
+            c = c.substring(1);
+            }
+            if (c.indexOf(name) == 0) {
+                return c.substring(name.length, c.length);
+            }
+        }
+        return "";
+    }
+    
+    static setCookie(cname, cvalue) {
+        const d = new Date();
+        d.setTime(d.getTime()+(30*24*60*60*1000));
+        document.cookie = cname + "=" + cvalue + ";" + "expires=" + d.toUTCString() + ";";
+    }
+
+    static checkCookie(cname) {
+        let cvalue = this.getCookie(cname);
+        switch(cname) {
+            case "mode":
+                if (cvalue != "") {
+                    document.getElementById("stylesheet").setAttribute("href", cvalue);;
+                } else {
+                    this.setCookie(cname, document.getElementById("stylesheet").getAttribute("href"));
+                }
+                break;
+            case "myid":
+                if (cvalue != "") {
+                    document.getElementById("profile").innerHTML=cvalue;
+                    document.getElementById("profile").setAttribute("onclick", "myStat()");
+                    document.getElementById("auth").style.display="none";;
+                }
+                break;
+            default:
+                console.log("Wrong cookie's name");
+        }
+    }
 }
